@@ -13,8 +13,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 统一操作 workspace/memory：memory.md 读写、日记地图、按日期读取日记（只读）。
- * 不提供「改写今日日记」等能力；SOUL.md 仅 read_soul，禁止本工具写入。
+ * 统一操作 workspace/memory：memory.md 读写、日记地图、按日期读/写日记正文。
+ * SOUL.md 仅 read_soul，禁止本工具写入。
  */
 @Slf4j
 @Component
@@ -27,16 +27,17 @@ public class MemoryWorkspaceTool {
 
     private static final String TOOL_DESC = """
             统一操作 workspace/memory 目录下记忆与日记。
-            日记按日正文文件路径：workspace/memory/diary/{yyyy-MM-dd}.md（仅此路径可读作「某日日记」）。
-            command（小写）：read_memory | write_memory | read_soul | read_diary_map | read_diary_date | write_memory_section。
+            日记正文路径：workspace/memory/diary/{yyyy-MM-dd}.md。
+            command（小写）：read_memory | write_memory | read_soul | read_diary_map | read_diary_date | write_diary_date | write_memory_section。
             禁止通过本工具修改 SOUL.md。
-            当用户在一长段话里要求查看某日/昨天/今天等日记时，应调用 read_diary_date，argument 填相对词或绝对日期（见下）。
+            用户要查看某日日记：read_diary_date；要重写/润色某日日记正文：write_diary_date（不要用 writeFile，writeFile 只能写 tmp 目录）。
             argument：read_memory/read_soul/read_diary_map 可空；write_memory 为自然语言意图；
-            read_diary_date 支持：yyyy-MM-dd，或 今天/昨天/前天/大前天，或 today/yesterday/tomorrow，或「3天前」这种数字天前；
+            read_diary_date：yyyy-MM-dd 或 昨天/今天/today 等（与原先一致）；
+            write_diary_date：格式「日期|用户意图」，日期规则同 read_diary_date，例如「昨天|把日记改写得更简洁」或「2026-03-21|全文润色」；
             write_memory_section 为「区块名|用户意图」（只改 memory.md 内 ## 区块）。
             """;
 
-    private static final String INVALID_CMD = "无效 command。支持: read_memory, write_memory, read_soul, read_diary_map, read_diary_date, write_memory_section";
+    private static final String INVALID_CMD = "无效 command。支持: read_memory, write_memory, read_soul, read_diary_map, read_diary_date, write_diary_date, write_memory_section";
     private static final String NO_SOUL_WRITE = "不允许通过本工具写入或修改 SOUL.md。";
 
     private final VisualizedMemoryManager memoryManager;
@@ -64,6 +65,7 @@ public class MemoryWorkspaceTool {
                 case "read_soul" -> memoryManager.readSoul();
                 case "read_diary_map" -> doReadDiaryMap();
                 case "read_diary_date" -> doReadDiaryDate(arg);
+                case "write_diary_date" -> doWriteDiaryDate(arg);
                 case "write_memory_section" -> doWriteMemorySection(arg);
                 default -> INVALID_CMD;
             };
@@ -114,6 +116,42 @@ public class MemoryWorkspaceTool {
             return "该日无日记文件或为空: " + resolved + "\n" + MemoryWorkspacePrompts.diaryEmptyPathHint(resolved);
         }
         return body;
+    }
+
+    /**
+     * 按日重写日记文件：argument 为「日期|用户意图」，日期解析规则同 {@link #doReadDiaryDate}。
+     */
+    private String doWriteDiaryDate(String argument) {
+        if (argument.isBlank()) {
+            return "write_diary_date 需要 argument，格式：日期|用户意图。例如：昨天|全文改写得更口语化；2026-03-21|润色并保留事实。";
+        }
+        int pipe = argument.indexOf('|');
+        if (pipe < 0) {
+            return "write_diary_date 须使用 | 分隔日期与用户意图，例如 昨天|按要点重写。";
+        }
+        String datePart = argument.substring(0, pipe).trim();
+        String userIntent = argument.substring(pipe + 1).trim();
+        if (userIntent.isEmpty()) {
+            return "用户意图不能为空（| 右侧）。";
+        }
+        String resolved = resolveDateArgument(datePart);
+        if (resolved == null) {
+            return "无法解析日期: " + datePart + "。支持同 read_diary_date。";
+        }
+        String current = memoryManager.readDiary(resolved);
+        String userPrompt = """
+                【当前该日日记全文】（可能为空）
+                %s
+
+                【用户意图】
+                %s
+
+                【要求】只输出新的日记正文 Markdown，用于覆盖 workspace/memory/diary/%s.md。不要其它说明，不要使用代码围栏。
+                """.formatted(current.isEmpty() ? "（尚无内容，可新建）" : current, userIntent, resolved);
+        String system = "你是日记编辑助手。只输出日记正文。";
+        String out = stripFence(liteAgent.chat(system, userPrompt).trim());
+        memoryManager.overwriteDiary(resolved, out);
+        return "已重写日记文件 diary/" + resolved + ".md";
     }
 
     /**

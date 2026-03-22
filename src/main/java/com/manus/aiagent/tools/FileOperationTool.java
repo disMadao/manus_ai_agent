@@ -12,7 +12,7 @@ public class FileOperationTool {
 
     private final String FILE_DIR = FileConstant.FILE_SAVE_DIR + "/file";
 
-    @Tool(description = "Read content from a file")
+    @Tool(description = "Read content from a file under tmp/file/ only. Do NOT use for workspace/memory/diary — use memoryWorkspace read_diary_date / write_diary_date instead.")
     public String readFile(@ToolParam(description = "Name of a file to read") String fileName) {
         String filePath = FILE_DIR + "/" + fileName;
         try {
@@ -22,7 +22,7 @@ public class FileOperationTool {
         }
     }
 
-    @Tool(description = "Write content to a temporary file in tmp/ directory. Do NOT use this for skill installation, use installSkill instead.")
+    @Tool(description = "Write to tmp/file/ only (NOT workspace/memory/diary). For diary rewrite use memoryWorkspace with command write_diary_date. For skills use installSkill.")
     public String writeFile(@ToolParam(description = "Name of the file to write") String fileName,
                             @ToolParam(description = "Content to write to the file") String content
     ) {
