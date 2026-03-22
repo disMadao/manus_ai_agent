@@ -91,10 +91,12 @@ public class VisualizedMemoryManager {
         - 日记地图（今天之前的最近 5 天；一天一句；塌缩时重做）：
           - 待更新
         
-        - 读取规则：
-          - 默认不读取历史日记原文。
-          - 仅当用户明确提到某天/某段经历，或当前问题与某天主题高度相关时，才读取对应日期的日记文件并用于推理。
-          - 日记内容仅供你决策参考，不要在回复中主动复述大段原文；必要时用“摘要+引用片段”的方式点到为止。
+        - 读取规则（与 memoryWorkspace 工具一致）：
+          - 实体日记正文文件路径为 workspace/memory/diary/{yyyy-MM-dd}.md；其它目录下的内容本助手无法通过 read_diary_date 读取。
+          - 当用户**未**点名具体日期、也未要求读某日日记时：默认不主动拉取历史日记原文，以本段与今日上下文为主。
+          - 当用户**明确**提到「昨天/前天/今天/某月某日」或要求阅读某日日记时：必须先通过工具 memoryWorkspace（command=read_diary_date）读取该日正文，再基于工具返回作答；**禁止**在未调用工具或未读到正文时编造日记内容。
+          - 若工具返回该日无文件或为空，应如实说明，并可提示用户将正文保存到上述路径。
+          - 日记内容仅供决策参考；回复中避免大段复述原文，必要时用「摘要+短引用」即可。
         
         """;
 
@@ -118,6 +120,23 @@ public class VisualizedMemoryManager {
      */
     public String readSoul() {
         return FileUtil.readString(SOUL_FILE, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 覆写整个 SOUL.md（由调用方保证内容合法）
+     */
+    public void writeSoul(String content) {
+        if (content == null || content.isBlank()) {
+            return;
+        }
+        String body = content.trim();
+        if (body.startsWith("```markdown")) {
+            body = body.replaceAll("^```markdown\\n?", "").replaceAll("\\n?```$", "");
+        } else if (body.startsWith("```")) {
+            body = body.replaceAll("^```\\n?", "").replaceAll("\\n?```$", "");
+        }
+        FileUtil.writeString(body.trim(), SOUL_FILE, StandardCharsets.UTF_8);
+        log.info("已更新 SOUL.md");
     }
 
     /**
@@ -154,6 +173,17 @@ public class VisualizedMemoryManager {
 
         FileUtil.writeString(newFullContent.trim(), MEMORY_FILE, StandardCharsets.UTF_8);
         log.info("AI/用户 已更新 memory.md (已自动剥离 SOUL 部分)");
+    }
+
+    /**
+     * 整文件写入 memory.md（不解析 ---），供程序化合并区块时使用。
+     */
+    public void writeMemoryDirect(String fullMemoryMarkdown) {
+        if (fullMemoryMarkdown == null) {
+            return;
+        }
+        FileUtil.writeString(fullMemoryMarkdown.trim(), MEMORY_FILE, StandardCharsets.UTF_8);
+        log.info("已直接写入 memory.md");
     }
 
     /**
@@ -265,6 +295,35 @@ public class VisualizedMemoryManager {
         log.info("已更新 memory.md 的日记地图（近 {} 天）", dateToOneLine == null ? 0 : dateToOneLine.size());
     }
 
+    /**
+     * 返回 memory.md 中「日记地图」片段（从「- 日记地图」到「- 读取规则：」之前），供按需加载对照。
+     */
+    public String getDiaryMapSection() {
+        String memory = readMemory();
+        if (memory == null || memory.isEmpty()) {
+            return "";
+        }
+        int diaryIndex = memory.indexOf("## diary");
+        if (diaryIndex < 0) {
+            return "";
+        }
+        int mapStart = memory.indexOf("- 日记地图", diaryIndex);
+        if (mapStart < 0) {
+            return "";
+        }
+        int mapLinesStart = memory.indexOf("\n", mapStart);
+        if (mapLinesStart < 0) {
+            mapLinesStart = mapStart;
+        } else {
+            mapLinesStart += 1;
+        }
+        int mapBlockEnd = memory.indexOf("\n- 读取规则：", mapLinesStart);
+        if (mapBlockEnd < 0) {
+            return "";
+        }
+        return memory.substring(mapStart, mapBlockEnd).trim();
+    }
+
     public String extractPreferenceBlock(String memory) {
         if (memory == null) return "";
         int start = memory.indexOf("## preference");
@@ -322,7 +381,7 @@ public class VisualizedMemoryManager {
     }
 
     /**
-     * [新增功能]：读取最近 N 天的完整日记/病历
+     * [新增功能]：读取最近 N 天的完整日记
      * @param days 包含今天在内，往前推算的天数（比如 2 代表今天和昨天）
      * @return 拼接好的日记文本
      */

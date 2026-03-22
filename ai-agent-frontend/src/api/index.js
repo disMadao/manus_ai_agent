@@ -54,6 +54,11 @@ export const getChatMessages = (chatId) => {
   return request.get('/ai/love_app/messages', { params: { chatId } })
 }
 
+// 重新加载记忆：清除短期记忆 + 从磁盘重读 SOUL.md、memory.md、日记
+export const reloadMemory = (chatId) => {
+  return request.post('/ai/love_app/memory/reload', null, { params: { chatId } })
+}
+
 // AI超级智能体聊天
 export const chatWithManus = (message) => {
   return connectSSE('/ai/manus/chat', { message })

@@ -51,13 +51,13 @@ public class DiaryVectorStoreConfig {
 
         // 当前实现：使用 PGVector，向量写入 public.vector_store
         VectorStore pgDiaryVectorStore = PgVectorStore.builder(jdbcTemplate, dashscopeEmbeddingModel)
-                .dimensions(1536)
+                .dimensions(1024)
                 .distanceType(COSINE_DISTANCE)
                 .indexType(HNSW)
                 .initializeSchema(true)
                 .schemaName("public")
                 .vectorTableName("vector_store")
-                .maxDocumentBatchSize(10000)
+                .maxDocumentBatchSize(10)
                 .build();
 
         // 加载文档
@@ -84,7 +84,7 @@ public class DiaryVectorStoreConfig {
                     .filter(d -> !isDiaryChunkEmbedded(jdbcTemplate, d))
                     .collect(Collectors.toList());
             if (!toAdd.isEmpty()) {
-                pgDiaryVectorStore.add(toAdd);
+                batchAdd(pgDiaryVectorStore, toAdd, 10);
                 log.info("diary 向量库新增写入文档分片数：{}", toAdd.size());
             } else {
                 log.info("diary 向量库无需新增写入（已是最新）");
@@ -119,6 +119,7 @@ public class DiaryVectorStoreConfig {
 
     private void cleanupDuplicateDiaryRows(JdbcTemplate jdbcTemplate) {
         if (jdbcTemplate == null) return;
+        try {
         jdbcTemplate.update("""
                 WITH ranked AS (
                     SELECT ctid,
@@ -135,59 +136,66 @@ public class DiaryVectorStoreConfig {
                 USING ranked r
                 WHERE v.ctid = r.ctid AND r.rn > 1
                 """);
+        } catch (Exception e) {
+            log.warn("清理重复日记行跳过（表可能尚未创建）: {}", e.getMessage());
+        }
     }
 
     private void syncDiaryVectorStore(JdbcTemplate jdbcTemplate, List<Document> currentDocs) {
         if (jdbcTemplate == null || currentDocs == null) {
             return;
         }
-        Set<String> currentFilenames = currentDocs.stream()
-                .map(d -> Objects.toString(d.getMetadata().get("filename"), ""))
-                .filter(s -> !s.isBlank())
-                .collect(Collectors.toSet());
-
-        List<String> dbFilenames = jdbcTemplate.queryForList(
-                "SELECT DISTINCT metadata->>'filename' FROM public.vector_store WHERE COALESCE(metadata->>'source','') IN ('diary','')",
-                String.class
-        );
-        for (String dbFilename : dbFilenames) {
-            if (dbFilename == null || dbFilename.isBlank()) continue;
-            if (!currentFilenames.contains(dbFilename)) {
-                jdbcTemplate.update(
-                        "DELETE FROM public.vector_store WHERE metadata->>'source'='diary' AND metadata->>'filename'=?",
-                        dbFilename
-                );
-            }
-        }
-
-        for (String filename : currentFilenames) {
-            Set<String> currentHashes = currentDocs.stream()
-                    .filter(d -> filename.equals(Objects.toString(d.getMetadata().get("filename"), "")))
-                    .map(d -> Objects.toString(d.getMetadata().get("chunk_hash"), ""))
+        try {
+            Set<String> currentFilenames = currentDocs.stream()
+                    .map(d -> Objects.toString(d.getMetadata().get("filename"), ""))
                     .filter(s -> !s.isBlank())
                     .collect(Collectors.toSet());
 
-            List<String> dbHashes = jdbcTemplate.queryForList(
-                    "SELECT metadata->>'chunk_hash' FROM public.vector_store WHERE COALESCE(metadata->>'source','') IN ('diary','') AND metadata->>'filename'=?",
-                    String.class,
-                    filename
+            List<String> dbFilenames = jdbcTemplate.queryForList(
+                    "SELECT DISTINCT metadata->>'filename' FROM public.vector_store WHERE COALESCE(metadata->>'source','') IN ('diary','')",
+                    String.class
             );
-            for (String dbHash : dbHashes) {
-                if (dbHash == null || dbHash.isBlank()) {
+            for (String dbFilename : dbFilenames) {
+                if (dbFilename == null || dbFilename.isBlank()) continue;
+                if (!currentFilenames.contains(dbFilename)) {
                     jdbcTemplate.update(
-                            "DELETE FROM public.vector_store WHERE metadata->>'source'='diary' AND metadata->>'filename'=? AND (metadata->>'chunk_hash' IS NULL OR metadata->>'chunk_hash'='')",
-                            filename
-                    );
-                    continue;
-                }
-                if (!currentHashes.contains(dbHash)) {
-                    jdbcTemplate.update(
-                            "DELETE FROM public.vector_store WHERE metadata->>'source'='diary' AND metadata->>'filename'=? AND metadata->>'chunk_hash'=?",
-                            filename,
-                            dbHash
+                            "DELETE FROM public.vector_store WHERE metadata->>'source'='diary' AND metadata->>'filename'=?",
+                            dbFilename
                     );
                 }
             }
+
+            for (String filename : currentFilenames) {
+                Set<String> currentHashes = currentDocs.stream()
+                        .filter(d -> filename.equals(Objects.toString(d.getMetadata().get("filename"), "")))
+                        .map(d -> Objects.toString(d.getMetadata().get("chunk_hash"), ""))
+                        .filter(s -> !s.isBlank())
+                        .collect(Collectors.toSet());
+
+                List<String> dbHashes = jdbcTemplate.queryForList(
+                        "SELECT metadata->>'chunk_hash' FROM public.vector_store WHERE COALESCE(metadata->>'source','') IN ('diary','') AND metadata->>'filename'=?",
+                        String.class,
+                        filename
+                );
+                for (String dbHash : dbHashes) {
+                    if (dbHash == null || dbHash.isBlank()) {
+                        jdbcTemplate.update(
+                                "DELETE FROM public.vector_store WHERE metadata->>'source'='diary' AND metadata->>'filename'=? AND (metadata->>'chunk_hash' IS NULL OR metadata->>'chunk_hash'='')",
+                                filename
+                        );
+                        continue;
+                    }
+                    if (!currentHashes.contains(dbHash)) {
+                        jdbcTemplate.update(
+                                "DELETE FROM public.vector_store WHERE metadata->>'source'='diary' AND metadata->>'filename'=? AND metadata->>'chunk_hash'=?",
+                                filename,
+                                dbHash
+                        );
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("同步日记向量库跳过（表可能尚未创建）: {}", e.getMessage());
         }
     }
 
@@ -200,13 +208,23 @@ public class DiaryVectorStoreConfig {
         if (filename.isBlank() || chunkHash.isBlank()) {
             return false;
         }
-        Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(1) FROM public.vector_store WHERE COALESCE(metadata->>'source','') IN ('diary','') AND metadata->>'filename'=? AND metadata->>'chunk_hash'=?",
-                Integer.class,
-                filename,
-                chunkHash
-        );
-        return count != null && count > 0;
+        try {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(1) FROM public.vector_store WHERE COALESCE(metadata->>'source','') IN ('diary','') AND metadata->>'filename'=? AND metadata->>'chunk_hash'=?",
+                    Integer.class,
+                    filename,
+                    chunkHash
+            );
+            return count != null && count > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void batchAdd(VectorStore store, List<Document> docs, int batchSize) {
+        for (int i = 0; i < docs.size(); i += batchSize) {
+            store.add(docs.subList(i, Math.min(i + batchSize, docs.size())));
+        }
     }
 
     private static String sha256(String s) {

@@ -1,9 +1,9 @@
 package com.manus.aiagent.rag;
 
-import jakarta.annotation.Resource;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.transformer.KeywordMetadataEnricher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,11 +14,14 @@ import java.util.List;
 @Component
 public class MyKeywordEnricher {
 
-    @Resource
-    private ChatModel dashscopeChatModel;
+    private final ChatModel dashScopeChatModel;
+
+    public MyKeywordEnricher(@Qualifier("dashScopeChatModel") ChatModel dashScopeChatModel) {
+        this.dashScopeChatModel = dashScopeChatModel;
+    }
 
     public List<Document> enrichDocuments(List<Document> documents) {
-        KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(dashscopeChatModel, 5);
+        KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(dashScopeChatModel, 5);
         return  keywordMetadataEnricher.apply(documents);
     }
 }

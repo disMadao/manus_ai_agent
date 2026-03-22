@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "memory_implement.md",
+                "file": "openfriend方案设计.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "memory_implement"
+              "title": "openfriend方案设计"
             }
           }
         ]
@@ -185,10 +185,16 @@
   },
   "active": "150684e761b4d1e1",
   "lastOpenFiles": [
+    "activitywatch-manus-integration.md",
+    "user-activity-windows11-requirements.md",
+    "user-activity-timeline-research.md",
+    "plans/memory-workspace-tool.md",
+    "plans",
+    "memory_implement.md",
+    "openfriend方案设计.md",
     "mcp.md",
     "学习日志.md",
     "引入postgre报错.md",
-    "memory_implement.md",
     "memory_design.md"
   ]
 }

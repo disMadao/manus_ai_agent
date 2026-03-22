@@ -15,8 +15,15 @@ public class ToolRegistration {
     @Value("${search-api.api-key}")
     private String searchApiKey;
 
+    @Value("${skillhub.skills-dir:workspace/skills}")
+    private String skillsDir;
+
+    @Value("${skillhub.base-url:https://skillhub.tencent.com}")
+    private String skillHubBaseUrl;
+
     @Bean
-    public ToolCallback[] allTools() {
+    public ToolCallback[] allTools(MemoryWorkspaceTool memoryWorkspaceTool) {
+        String skillsPath = System.getProperty("user.dir") + "/" + skillsDir;
         FileOperationTool fileOperationTool = new FileOperationTool();
         WebSearchTool webSearchTool = new WebSearchTool(searchApiKey);
         WebScrapingTool webScrapingTool = new WebScrapingTool();
@@ -24,6 +31,7 @@ public class ToolRegistration {
         TerminalOperationTool terminalOperationTool = new TerminalOperationTool();
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         TerminateTool terminateTool = new TerminateTool();
+        SkillInstallTool skillInstallTool = new SkillInstallTool(skillsPath, skillHubBaseUrl);
         return ToolCallbacks.from(
                 fileOperationTool,
                 webSearchTool,
@@ -31,7 +39,9 @@ public class ToolRegistration {
                 resourceDownloadTool,
                 terminalOperationTool,
                 pdfGenerationTool,
-                terminateTool
+                terminateTool,
+                skillInstallTool,
+                memoryWorkspaceTool
         );
     }
 }

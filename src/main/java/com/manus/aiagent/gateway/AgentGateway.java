@@ -1,9 +1,8 @@
 package com.manus.aiagent.gateway;
 
-import com.manus.aiagent.agent.ManusAgent;
-import com.manus.aiagent.app.LoveApp;
+import com.manus.aiagent.agent.manus.ManusAgent;
+import com.manus.aiagent.agent.app.OpenFriend;
 import com.manus.aiagent.chatmemory.ChatMessageStore;
-import com.manus.aiagent.chatmemory.VisualizedMemoryManager;
 import com.manus.aiagent.gateway.model.GatewayRequest;
 import com.manus.aiagent.gateway.model.GatewayResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -11,16 +10,12 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.document.Document;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 统一网关服务：负责路由消息到对应的 Agent，注入记忆上下文，持久化对话。
@@ -30,28 +25,25 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AgentGateway {
 
-    private final LoveApp loveApp;
+    private final OpenFriend openFriend;
     private final ToolCallback[] allTools;
-    private final ChatModel dashscopeChatModel;
-    private final VisualizedMemoryManager memoryManager;
+    private final ChatModel dashScopeChatModel;
     private final ChatMessageStore chatMessageStore;
     private final ChatMemory shortTermMemory;
-    private final VectorStore knowledgeVectorStore;
+    private final ManusMemoryEnricher manusMemoryEnricher;
 
-    public AgentGateway(LoveApp loveApp,
+    public AgentGateway(OpenFriend openFriend,
                         ToolCallback[] allTools,
-                        @Qualifier("dashscopeChatModel") ChatModel dashscopeChatModel,
-                        VisualizedMemoryManager memoryManager,
+                        @Qualifier("dashScopeChatModel") ChatModel dashScopeChatModel,
                         ChatMessageStore chatMessageStore,
                         ChatMemory shortTermMemory,
-                        @Qualifier("knowledgeVectorStore") VectorStore knowledgeVectorStore) {
-        this.loveApp = loveApp;
+                        ManusMemoryEnricher manusMemoryEnricher) {
+        this.openFriend = openFriend;
         this.allTools = allTools;
-        this.dashscopeChatModel = dashscopeChatModel;
-        this.memoryManager = memoryManager;
+        this.dashScopeChatModel = dashScopeChatModel;
         this.chatMessageStore = chatMessageStore;
         this.shortTermMemory = shortTermMemory;
-        this.knowledgeVectorStore = knowledgeVectorStore;
+        this.manusMemoryEnricher = manusMemoryEnricher;
     }
 
     /**
@@ -61,8 +53,8 @@ public class AgentGateway {
         String mode = request.getMode() != null ? request.getMode() : "normal";
         return switch (mode.toLowerCase()) {
             case "super" -> chatWithManusAgent(request);
-            case "thinking" -> loveApp.doChatByStream(request.getMessage(), request.getChatId(), true);
-            default -> loveApp.doChatByStream(request.getMessage(), request.getChatId(), false);
+            case "thinking" -> openFriend.doChatByStream(request.getMessage(), request.getChatId(), true);
+            default -> openFriend.doChatByStream(request.getMessage(), request.getChatId(), false);
         };
     }
 
@@ -76,7 +68,7 @@ public class AgentGateway {
                 String result = chatWithManusAgentSync(request);
                 return GatewayResponse.ok(result, request.getChatId());
             }
-            String result = loveApp.doChat(request.getMessage(), request.getChatId());
+            String result = openFriend.doChat(request.getMessage(), request.getChatId());
             return GatewayResponse.ok(result, request.getChatId());
         } catch (Exception e) {
             log.error("同步对话失败", e);
@@ -113,22 +105,8 @@ public class AgentGateway {
      * 创建注入了记忆上下文的 ManusAgent 实例
      */
     private ManusAgent createMemoryEnrichedManusAgent(String userMessage) {
-        ManusAgent agent = new ManusAgent(allTools, dashscopeChatModel);
-
-        String memoryContext = memoryManager.readFullMemory();
-        String todayDiary = memoryManager.readTodayDiaryWithHeader();
-        String knowledgeContext = searchKnowledge(userMessage);
-
-        StringBuilder enrichedPrompt = new StringBuilder(agent.getSystemPrompt());
-        enrichedPrompt.append("\n\n---\n[记忆上下文]：\n").append(memoryContext);
-        if (todayDiary != null && !todayDiary.isEmpty()) {
-            enrichedPrompt.append("\n\n---\n[今天的日记（仅供参考）]：\n").append(todayDiary);
-        }
-        if (knowledgeContext != null && !knowledgeContext.isEmpty()) {
-            enrichedPrompt.append("\n\n---\n[RAG 检索到的相关知识]：\n").append(knowledgeContext);
-        }
-
-        agent.setSystemPrompt(enrichedPrompt.toString());
+        ManusAgent agent = new ManusAgent(allTools, dashScopeChatModel);
+        agent.setSystemPrompt(manusMemoryEnricher.buildEnrichedSystemPrompt(agent.getSystemPrompt(), userMessage));
         return agent;
     }
 
@@ -152,28 +130,4 @@ public class AgentGateway {
         }
     }
 
-    /**
-     * RAG 检索知识库
-     */
-    private String searchKnowledge(String query) {
-        if (knowledgeVectorStore == null || query == null || query.isBlank()) {
-            return "";
-        }
-        try {
-            List<Document> results = knowledgeVectorStore.similaritySearch(
-                    SearchRequest.builder()
-                            .query(query)
-                            .topK(3)
-                            .similarityThreshold(0.5)
-                            .build()
-            );
-            if (results == null || results.isEmpty()) return "";
-            return results.stream()
-                    .map(Document::getText)
-                    .collect(Collectors.joining("\n---\n"));
-        } catch (Exception e) {
-            log.warn("RAG 知识库检索失败: {}", e.getMessage());
-            return "";
-        }
-    }
 }

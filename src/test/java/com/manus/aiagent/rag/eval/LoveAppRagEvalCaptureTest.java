@@ -2,7 +2,7 @@ package com.manus.aiagent.rag.eval;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.manus.aiagent.app.LoveApp;
+import com.manus.aiagent.agent.app.OpenFriend;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class LoveAppRagEvalCaptureTest {
     private static final DateTimeFormatter TS_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     @Resource
-    private LoveApp loveApp;
+    private OpenFriend openFriend;
 
     @Resource
     @Qualifier("diaryVectorStore")
@@ -61,7 +61,7 @@ class LoveAppRagEvalCaptureTest {
                 String datasetVersion = row.path("dataset_version").asText("v1");
 
                 String chatId = "ragas-capture-" + UUID.randomUUID();
-                String answer = loveApp.doChat(question, chatId);
+                String answer = openFriend.doChat(question, chatId);
                 if (answer == null) {
                     answer = "";
                 }

@@ -22,7 +22,7 @@ public class FileOperationTool {
         }
     }
 
-    @Tool(description = "Write content to a file")
+    @Tool(description = "Write content to a temporary file in tmp/ directory. Do NOT use this for skill installation, use installSkill instead.")
     public String writeFile(@ToolParam(description = "Name of the file to write") String fileName,
                             @ToolParam(description = "Content to write to the file") String content
     ) {

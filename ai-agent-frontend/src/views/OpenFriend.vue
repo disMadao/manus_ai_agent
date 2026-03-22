@@ -3,7 +3,18 @@
     <div class="header">
       <div class="back-button" @click="goBack">返回</div>
       <h1 class="title">OpenFriend</h1>
-      <div class="chat-id">会话ID: {{ chatId }}</div>
+      <div class="header-right">
+        <button 
+          class="reload-btn" 
+          :class="{ spinning: reloading }"
+          :disabled="reloading"
+          @click="handleReloadMemory"
+          title="重新加载记忆文件"
+        >
+          ↻
+        </button>
+        <div class="chat-id">{{ chatId }}</div>
+      </div>
     </div>
 
     <div class="mode-selector">
@@ -40,7 +51,7 @@ import { useRouter } from 'vue-router'
 import { useHead } from '@vueuse/head'
 import ChatRoom from '../components/ChatRoom.vue'
 import AppFooter from '../components/AppFooter.vue'
-import { chatWithLoveApp, getChatMessages } from '../api'
+import { chatWithLoveApp, getChatMessages, reloadMemory } from '../api'
 
 // 设置页面标题和元数据
 useHead({
@@ -70,6 +81,8 @@ const modes = [
   { label: '深度思考', value: 'thinking' },
   { label: '超级智能体', value: 'super' }
 ]
+
+const reloading = ref(false)
 
 // 固定会话ID
 const FIXED_CHAT_ID = 'open_friend_default'
@@ -118,6 +131,20 @@ const sendMessage = (message) => {
     console.error('SSE Error:', error)
     connectionStatus.value = 'error'
     eventSource.close()
+  }
+}
+
+// 刷新记忆：清除旧记忆 + 从磁盘重新加载
+const handleReloadMemory = async () => {
+  reloading.value = true
+  try {
+    const { data } = await reloadMemory(chatId.value)
+    addMessage(data.success ? '记忆重新加载成功' : '记忆重新加载失败', false)
+  } catch (e) {
+    addMessage('记忆重新加载失败', false)
+    console.error('刷新记忆失败', e)
+  } finally {
+    reloading.value = false
   }
 }
 
@@ -200,9 +227,50 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .chat-id {
   font-size: 14px;
   opacity: 0.8;
+}
+
+.reload-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  background: transparent;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  padding: 0;
+}
+
+.reload-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: white;
+}
+
+.reload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reload-btn.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .mode-selector {

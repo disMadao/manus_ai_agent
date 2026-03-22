@@ -1,5 +1,6 @@
 package com.manus.aiagent.agent;
 
+import com.manus.aiagent.agent.manus.ManusAgent;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

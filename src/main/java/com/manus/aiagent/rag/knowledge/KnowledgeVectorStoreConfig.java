@@ -41,13 +41,13 @@ public class KnowledgeVectorStoreConfig {
 
         // 当前实现：使用 PGVector，向量写入 public.vector_store
         VectorStore pgDiaryVectorStore = PgVectorStore.builder(jdbcTemplate, dashscopeEmbeddingModel)
-                .dimensions(1536)
+                .dimensions(1024)
                 .distanceType(COSINE_DISTANCE)
                 .indexType(HNSW)
                 .initializeSchema(true)
                 .schemaName("public")
                 .vectorTableName("vector_store")
-                .maxDocumentBatchSize(10000)
+                .maxDocumentBatchSize(10)
                 .build();
 
         // 加载文档
@@ -74,7 +74,7 @@ public class KnowledgeVectorStoreConfig {
                     .filter(d -> !isKnowledgeChunkEmbedded(jdbcTemplate, d))
                     .collect(Collectors.toList());
             if (!toAdd.isEmpty()) {
-                pgDiaryVectorStore.add(toAdd);
+                batchAdd(pgDiaryVectorStore, toAdd, 10);
                 log.info("knowledge 向量库新增写入文档分片数：{}", toAdd.size());
             } else {
                 log.info("knowledge 向量库无需新增写入（已是最新）");
@@ -200,6 +200,12 @@ public class KnowledgeVectorStoreConfig {
                 chunkHash
         );
         return count != null && count > 0;
+    }
+
+    private void batchAdd(VectorStore store, List<Document> docs, int batchSize) {
+        for (int i = 0; i < docs.size(); i += batchSize) {
+            store.add(docs.subList(i, Math.min(i + batchSize, docs.size())));
+        }
     }
 
     private static String sha256(String s) {

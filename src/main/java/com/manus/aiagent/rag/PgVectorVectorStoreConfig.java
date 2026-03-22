@@ -29,17 +29,17 @@ public class PgVectorVectorStoreConfig {
     @Bean
     public VectorStore pgVectorVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel dashscopeEmbeddingModel) {
         VectorStore pgVectorVectorStore = PgVectorStore.builder(jdbcTemplate, dashscopeEmbeddingModel)
-                .dimensions(1536)
+                .dimensions(1024)
                 .distanceType(COSINE_DISTANCE)
                 .indexType(HNSW)
                 .initializeSchema(true)
                 .schemaName("public")
                 .vectorTableName("vector_store")
-                .maxDocumentBatchSize(10000)
+                .maxDocumentBatchSize(10)
                 .build();
         try {
             List<Document> documents = loveAppDocumentLoader.loadMarkdowns();
-            pgVectorVectorStore.add(documents);
+            batchAdd(pgVectorVectorStore, documents, 10);
             log.info("成功加载 {} 个文档到 PgVectorStore", documents.size());
         } catch (Exception e) {
             log.error("加载文档到 PgVectorStore 失败，但 Bean 已创建，应用可继续启动", e);
@@ -47,14 +47,9 @@ public class PgVectorVectorStoreConfig {
         return pgVectorVectorStore;
     }
 
-//    @PostConstruct
-//    public void loadDocuments() {
-//        try {
-//            List<Document> documents = loveAppDocumentLoader.loadMarkdowns();
-//            pgVectorVectorStore.add(documents);
-//            log.info("成功加载 {} 个文档到 PgVectorStore", documents.size());
-//        } catch (Exception e) {
-//            log.error("加载文档到 PgVectorStore 失败，但 Bean 已创建，应用可继续启动", e);
-//        }
-//    }
+    private void batchAdd(VectorStore store, List<Document> docs, int batchSize) {
+        for (int i = 0; i < docs.size(); i += batchSize) {
+            store.add(docs.subList(i, Math.min(i + batchSize, docs.size())));
+        }
+    }
 }

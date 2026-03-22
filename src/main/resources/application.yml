@@ -34,7 +34,7 @@ spring:
     vectorstore:
       pgvector:
         index-type: HNSW
-        dimensions: 1536
+        dimensions: 1024
         distance-type: COSINE_DISTANCE
         max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
 server:
@@ -62,6 +62,10 @@ knife4j:
 search-api:
   # 需要替换为你自己的 key
   api-key: your-search-api-key
+# SkillHub 技能市场配置
+skillhub:
+  base-url: https://skillhub.tencent.com
+  skills-dir: workspace/skills
 # Gateway 外部渠道配置（QQ Bot / 飞书 Bot）
 gateway:
 #  qq:
@@ -74,6 +78,14 @@ gateway:
 #    app-id: your-feishu-app-id
 #    app-secret: your-feishu-app-secret
 #    verification-token: your-feishu-verification-token
+
+# ActivityWatch：本机行程同步（需安装 AW，aw-server 默认 127.0.0.1:5600）
+activitywatch:
+  enabled: false
+  base-url: http://127.0.0.1:5600
+  events-limit: 8000
+  heartbeat-interval-ms: 1200000 # 20 分钟
+
 # 修改日志级别，查看 Spring AI 更多调用细节
 logging:
   level:

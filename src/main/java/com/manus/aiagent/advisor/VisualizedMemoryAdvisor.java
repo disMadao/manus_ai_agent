@@ -2,6 +2,7 @@ package com.manus.aiagent.advisor;
 
 import com.manus.aiagent.chatmemory.ChatMessageStore;
 import com.manus.aiagent.chatmemory.VisualizedMemoryManager;
+import com.manus.aiagent.tools.MemoryWorkspacePrompts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -16,7 +17,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -47,6 +47,12 @@ public class VisualizedMemoryAdvisor implements CallAdvisor, StreamAdvisor, Orde
     private final VectorStore knowledgeVectorStore;
     private final ChatMessageStore chatMessageStore;
 
+    /**
+     * 已加载的记忆内容（SOUL + memory + 今日日记），由 loadMemory() 填充。
+     * buildUpdatedRequest 使用此缓存而非每次从磁盘读取。
+     */
+    private volatile String loadedSystemContent;
+
     private static final int MEMORY_COLLAPSE_THRESHOLD = 6;
 
     public VisualizedMemoryAdvisor(VisualizedMemoryManager memoryManager,
@@ -62,6 +68,33 @@ public class VisualizedMemoryAdvisor implements CallAdvisor, StreamAdvisor, Orde
         this.diaryVectorStore = diaryVectorStore;
         this.knowledgeVectorStore = knowledgeVectorStore;
         this.chatMessageStore = chatMessageStore;
+
+        loadMemory();
+    }
+
+    /**
+     * 从磁盘读取 SOUL.md、memory.md、今日日记，组装为系统提示词并缓存
+     */
+    public void loadMemory() {
+        String memory = memoryManager.readFullMemory();
+        String todayDiary = memoryManager.readTodayDiaryWithHeader();
+
+        StringBuilder sb = new StringBuilder(memory);
+        if (todayDiary != null && !todayDiary.isEmpty()) {
+            sb.append("\n\n---\n[今天的日记（仅供参考，不要主动复述）]：\n").append(todayDiary).append("\n");
+        }
+        this.loadedSystemContent = sb.toString();
+        log.info("记忆已加载：SOUL + memory + 今日日记，共 {} 字", loadedSystemContent.length());
+    }
+
+    /**
+     * 重新加载记忆：清除指定会话的短期对话历史，然后从磁盘重新读取所有记忆文件
+     */
+    public void reload(String chatId) {
+        shortTermMemory.clear(chatId);
+        log.info("已清除会话 [{}] 的短期对话历史", chatId);
+        loadMemory();
+        log.info("会话 [{}] 记忆已重新加载完成", chatId);
     }
 
     @Override
@@ -137,18 +170,14 @@ public class VisualizedMemoryAdvisor implements CallAdvisor, StreamAdvisor, Orde
     private ChatClientRequest buildUpdatedRequest(ChatClientRequest request,
                                                   String conversationId,
                                                   List<Message> userMessages) {
-        String memory = memoryManager.readFullMemory();
         String userQuery = userMessages.stream().map(Message::getText).collect(Collectors.joining(" "));
         String knowledgeContext = searchKnowledgeByRag(userQuery);
-        String todayDiary = memoryManager.readTodayDiaryWithHeader();
 
-        StringBuilder systemPromptBuilder = new StringBuilder(memory);
-        if (!todayDiary.isEmpty()) {
-            systemPromptBuilder.append("\n\n---\n[今天的日记（仅供参考，不要主动复述）]：\n").append(todayDiary).append("\n");
-        }
+        StringBuilder systemPromptBuilder = new StringBuilder(loadedSystemContent);
         if (!knowledgeContext.isEmpty()) {
             systemPromptBuilder.append("\n\n---\n[RAG 检索到的相关知识库内容，参考其中的风格]：\n").append(knowledgeContext);
         }
+        systemPromptBuilder.append(MemoryWorkspacePrompts.SYSTEM_TOOL_ROUTING_BLOCK);
 
         SystemMessage systemMessage = new SystemMessage(systemPromptBuilder.toString());
         List<Message> historyMessages = shortTermMemory.get(conversationId);
@@ -157,7 +186,7 @@ public class VisualizedMemoryAdvisor implements CallAdvisor, StreamAdvisor, Orde
         }
 
         List<Message> allMessages = new ArrayList<>();
-        allMessages.add(systemMessage);// 将memory 和最近两天日记直接添加到系统提示词中
+        allMessages.add(systemMessage);
         allMessages.addAll(historyMessages);
         allMessages.addAll(userMessages);
 
@@ -369,11 +398,9 @@ public class VisualizedMemoryAdvisor implements CallAdvisor, StreamAdvisor, Orde
                     .getText();
             memoryManager.replacePreferenceText(newPreferenceBlock);
 
-            // 写完后重新加载（确保后续请求读取的是最新文件内容）
-            memoryManager.readMemory();
-            memoryManager.readTodayDiaryWithHeader();
             shortTermMemory.clear(conversationId);
-            log.info("记忆坍缩完成：已压缩重写今天日记，已重建日记地图，并更新 preference。");
+            loadMemory();
+            log.info("记忆坍缩完成：已压缩重写今天日记，已重建日记地图，并更新 preference，记忆已重新加载。");
         } catch (Exception e) {
             log.error("记忆坍缩失败", e);
         }
