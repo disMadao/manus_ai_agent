@@ -2,6 +2,7 @@ package com.manus.aiagent.gateway;
 
 import com.manus.aiagent.agent.manus.ManusAgent;
 import com.manus.aiagent.agent.app.OpenFriend;
+import com.manus.aiagent.advisor.VisualizedMemoryAdvisor;
 import com.manus.aiagent.chatmemory.ChatMessageStore;
 import com.manus.aiagent.gateway.model.GatewayRequest;
 import com.manus.aiagent.gateway.model.GatewayResponse;
@@ -31,19 +32,22 @@ public class AgentGateway {
     private final ChatMessageStore chatMessageStore;
     private final ChatMemory shortTermMemory;
     private final ManusMemoryEnricher manusMemoryEnricher;
+    private final VisualizedMemoryAdvisor visualizedMemoryAdvisor;
 
     public AgentGateway(OpenFriend openFriend,
                         ToolCallback[] allTools,
                         @Qualifier("dashScopeChatModel") ChatModel dashScopeChatModel,
                         ChatMessageStore chatMessageStore,
                         ChatMemory shortTermMemory,
-                        ManusMemoryEnricher manusMemoryEnricher) {
+                        ManusMemoryEnricher manusMemoryEnricher,
+                        VisualizedMemoryAdvisor visualizedMemoryAdvisor) {
         this.openFriend = openFriend;
         this.allTools = allTools;
         this.dashScopeChatModel = dashScopeChatModel;
         this.chatMessageStore = chatMessageStore;
         this.shortTermMemory = shortTermMemory;
         this.manusMemoryEnricher = manusMemoryEnricher;
+        this.visualizedMemoryAdvisor = visualizedMemoryAdvisor;
     }
 
     /**
@@ -105,7 +109,7 @@ public class AgentGateway {
      * 创建注入了记忆上下文的 ManusAgent 实例
      */
     private ManusAgent createMemoryEnrichedManusAgent(String userMessage) {
-        ManusAgent agent = new ManusAgent(allTools, dashScopeChatModel);
+        ManusAgent agent = new ManusAgent(allTools, dashScopeChatModel, visualizedMemoryAdvisor);
         agent.setSystemPrompt(manusMemoryEnricher.buildEnrichedSystemPrompt(agent.getSystemPrompt(), userMessage));
         return agent;
     }

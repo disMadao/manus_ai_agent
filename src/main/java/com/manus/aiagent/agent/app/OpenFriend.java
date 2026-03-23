@@ -3,8 +3,6 @@ package com.manus.aiagent.agent.app;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.advisors.SkillPromptAugmentAdvisor;
 import com.manus.aiagent.advisor.MyLoggerAdvisor;
-import com.manus.aiagent.chatmemory.ChatMessageStore;
-import com.manus.aiagent.chatmemory.VisualizedMemoryManager;
 import com.manus.aiagent.advisor.VisualizedMemoryAdvisor;
 import com.manus.aiagent.rag.QueryRewriter;
 import jakarta.annotation.Resource;
@@ -16,7 +14,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -31,7 +28,8 @@ public class OpenFriend {
 //    private final ReactAgent reactAgent;
 
     private final ChatClient chatClient;
-    private final VisualizedMemoryAdvisor visualizedMemoryAdvisor;//这个东西需要做成bean吗？因为我想要做的是多个agent共享一套记忆
+    /** 由 Spring 按本类唯一构造器注入，无需对字段使用 {@code @Resource}/{@code @Autowired}。 */
+    private final VisualizedMemoryAdvisor visualizedMemoryAdvisor;
     /** 与 Spring 容器 {@code allTools} Bean 相同引用，已通过 {@link ChatClient.Builder#defaultToolCallbacks} 注册到本 Agent。 */
     private final ToolCallback[] allTools;
 
@@ -42,25 +40,17 @@ public class OpenFriend {
                     "当用户提出角色扮演需求时，遵循 memory.md 中的 role 节点执行；\n" +
                     "若用户未提出明确角色要求，则保持 OpenFriend 默认角色。";
 
+    /**
+     * Spring Boot：仅有一个构造器时自动装配全部参数；{@link VisualizedMemoryAdvisor} 来自
+     * {@link com.manus.aiagent.advisor.config.VisualizedMemoryAdvisorConfig} 注册的 Bean。
+     */
     public OpenFriend(@Qualifier("dashScopeChatModel") ChatModel dashScopeChatModel,
-                   VisualizedMemoryManager memoryManager,
-                   @Qualifier("diaryVectorStore") VectorStore diaryVectorStore,
-                   @Qualifier("knowledgeVectorStore") VectorStore knowledgeVectorStore,
-                   ChatMessageStore chatMessageStore,
-                   ChatMemory shortTermMemory,
+                   VisualizedMemoryAdvisor visualizedMemoryAdvisor,
                    SkillPromptAugmentAdvisor skillPromptAugmentAdvisor,
                    ToolCallback[] allTools) {
 
         this.allTools = allTools;
-
-        this.visualizedMemoryAdvisor = new VisualizedMemoryAdvisor(
-                memoryManager,
-                shortTermMemory,
-                dashScopeChatModel,
-                diaryVectorStore,
-                knowledgeVectorStore,
-                chatMessageStore
-        );
+        this.visualizedMemoryAdvisor = visualizedMemoryAdvisor;
 
         this.chatClient = ChatClient.builder(dashScopeChatModel)
                 .defaultAdvisors(

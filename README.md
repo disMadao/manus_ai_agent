@@ -50,7 +50,7 @@ manus_ai_agent/
 │   ├── constant/
 │   └── demo/                     # 试验与示例代码
 ├── src/main/resources/           # application*.yml、document/ 等
-├── workspace/                    # 运行时：memory（SOUL/memory/diary/activity）、skills 等
+├── workspace/                  # 运行时：memory（SOUL/memory/diary/activity）、skills 等
 ├── tmp/                          # 临时文件目录（如工具写盘约定）
 ├── ai-agent-frontend/            # 前端（Vue 3）
 ├── image-search-mcp-server/      # MCP 图片搜索独立服务
@@ -120,7 +120,7 @@ spring:
 **代码中的使用出处：**
 
 - **Spring AI 自动装配**：依赖 `spring-ai-alibaba-starter-dashscope`，会根据 `spring.ai.dashscope.*` 自动创建 `ChatModel`、`EmbeddingModel`，并被以下组件注入使用：
-  - `AiController`、`LoveApp`、`ManusAgent`、`QueryRewriter`、`MyKeywordEnricher` 等使用 **ChatModel**（对话）
+  - `AiController`、`OpenFriend`、`ManusAgent`、`QueryRewriter`、`MyKeywordEnricher` 等使用 **ChatModel**（对话）
   - `PgVectorVectorStoreConfig`、`LoveAppVectorStoreConfig` 使用 **EmbeddingModel**（向量化）
 - **直接读取 API Key**：`LoveAppRagCloudAdvisorConfig` 中通过 `@Value("${spring.ai.dashscope.api-key}")` 使用，用于阿里云知识库 RAG（见 `rag/LoveAppRagCloudAdvisorConfig.java`）。
 

@@ -1,5 +1,6 @@
 package com.manus.aiagent.agent;
 
+import com.manus.aiagent.advisor.VisualizedMemoryAdvisor;
 import com.manus.aiagent.agent.manus.ManusAgent;
 import com.manus.aiagent.gateway.ManusMemoryEnricher;
 import jakarta.annotation.Resource;
@@ -29,11 +30,14 @@ class ManusAgentMemoryWorkspaceIT {
     @Resource
     private ManusMemoryEnricher manusMemoryEnricher;
 
+    @Resource
+    private VisualizedMemoryAdvisor visualizedMemoryAdvisor;
+
     /**
      * 与网关 {@code createMemoryEnrichedManusAgent} 行为对齐。
      */
     private ManusAgent newGatewayStyleAgent(String userMessage) {
-        ManusAgent agent = new ManusAgent(allTools, dashScopeChatModel);
+        ManusAgent agent = new ManusAgent(allTools, dashScopeChatModel, visualizedMemoryAdvisor);
         agent.setSystemPrompt(manusMemoryEnricher.buildEnrichedSystemPrompt(agent.getSystemPrompt(), userMessage));
         return agent;
     }

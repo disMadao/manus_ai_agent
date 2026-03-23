@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 共享短期记忆 Bean，供 OpenFriend（VisualizedMemoryAdvisor）和 AgentGateway 共用
+ * 共享短期记忆 Bean，供 {@link com.manus.aiagent.advisor.VisualizedMemoryAdvisor}（单例）与 AgentGateway 共用
  */
 @Configuration
 public class MemoryConfig {

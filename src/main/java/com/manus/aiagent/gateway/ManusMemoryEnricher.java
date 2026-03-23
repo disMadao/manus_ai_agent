@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 /**
  * 为 ManusAgent 拼接与 {@link AgentGateway} 超级模式一致的记忆与 RAG 上下文。
- * 单测中若需与网关行为对齐：先 {@code new ManusAgent(allTools, chatModel)}，再对本类
+ * 单测中若需与网关行为对齐：先 {@code new ManusAgent(allTools, chatModel, visualizedMemoryAdvisor)}，再对本类
  * {@link #buildEnrichedSystemPrompt(String, String)} 的返回值 {@code agent.setSystemPrompt(...)}。
  */
 @Component

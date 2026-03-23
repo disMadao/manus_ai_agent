@@ -1,6 +1,7 @@
 package com.manus.aiagent.agent.manus;
 
 import com.manus.aiagent.advisor.MyLoggerAdvisor;
+import com.manus.aiagent.advisor.VisualizedMemoryAdvisor;
 import com.manus.aiagent.tools.MemoryWorkspacePrompts;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ManusAgent extends ToolCallAgent {
 
-    public ManusAgent(ToolCallback[] allTools, @Qualifier("dashScopeChatModel") ChatModel dashScopeChatModel) {
+    public ManusAgent(ToolCallback[] allTools,
+                        @Qualifier("dashScopeChatModel") ChatModel dashScopeChatModel,
+                        VisualizedMemoryAdvisor visualizedMemoryAdvisor) {
         super(allTools);
         this.setName("manusAgent");
         String SYSTEM_PROMPT = """
@@ -31,7 +34,7 @@ public class ManusAgent extends ToolCallAgent {
         this.setNextStepPrompt(NEXT_STEP_PROMPT);
         this.setMaxSteps(20);
         ChatClient chatClient = ChatClient.builder(dashScopeChatModel)
-                .defaultAdvisors(new MyLoggerAdvisor())
+                .defaultAdvisors(visualizedMemoryAdvisor, new MyLoggerAdvisor())
                 .build();
         this.setChatClient(chatClient);
     }
