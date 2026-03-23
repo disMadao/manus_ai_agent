@@ -37,8 +37,8 @@ public class DiaryVectorStoreConfig {
     @Resource
     private MyTokenTextSplitter myTokenTextSplitter;
 
-    @Resource
-    private MyKeywordEnricher myKeywordEnricher;
+//    @Resource
+//    private MyKeywordEnricher myKeywordEnricher;
 
     @Resource
     private DiaryDocumentLoader diaryDocumentLoader;
@@ -64,10 +64,10 @@ public class DiaryVectorStoreConfig {
         // 自主切分文档
 //        List<Document> splitDocuments = myTokenTextSplitter.splitCustomized(documentList);
         // 自动补充关键词元信息
-        List<Document> enrichedDocuments = myKeywordEnricher.enrichDocuments(documentList);
+//        List<Document> enrichedDocuments = myKeywordEnricher.enrichDocuments(documentList);
 
         // 写入前：为每个 chunk 生成稳定 hash，用于去重/更新
-        for (Document doc : enrichedDocuments) {
+        for (Document doc : documentList) {
             String filename = Objects.toString(doc.getMetadata().get("filename"), "");
             String chunkIndex = Objects.toString(doc.getMetadata().get("chunk_index"), "");
             String text = doc.getText() == null ? "" : doc.getText();
@@ -78,8 +78,8 @@ public class DiaryVectorStoreConfig {
         boolean locked = acquireLock(jdbcTemplate, 2026031702L);
         try {
             cleanupDuplicateDiaryRows(jdbcTemplate);
-            syncDiaryVectorStore(jdbcTemplate, enrichedDocuments);
-            List<Document> toAdd = enrichedDocuments.stream()
+            syncDiaryVectorStore(jdbcTemplate, documentList);
+            List<Document> toAdd = documentList.stream()
                     .filter(d -> !isDiaryChunkEmbedded(jdbcTemplate, d))
                     .collect(Collectors.toList());
             if (!toAdd.isEmpty()) {

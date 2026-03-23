@@ -21,6 +21,8 @@ public class MyKeywordEnricher {
     }
 
     public List<Document> enrichDocuments(List<Document> documents) {
+        //生成5个标签在元信息中，如 ："excerpt_keywords": "boredom, stillness, emptiness, quietude, inertia"
+        // 可以让检索更快，但需要手动实现。而且比较硬编码，不是那么的有用，感觉
         KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(dashScopeChatModel, 5);
         return  keywordMetadataEnricher.apply(documents);
     }

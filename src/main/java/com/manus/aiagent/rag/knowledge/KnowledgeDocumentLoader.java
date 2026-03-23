@@ -26,7 +26,7 @@ public class KnowledgeDocumentLoader {
     }
 
     /**
-     * 加载知识库 下文档，支持md，pdf，word格式
+     * 加载知识库 下文档，支持md格式
      * @return
      */
     public List<Document> loadDocuments() {
@@ -41,10 +41,10 @@ public class KnowledgeDocumentLoader {
                 }
 
                 MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
-                        .withHorizontalRuleCreateDocument(true)
-                        .withIncludeCodeBlock(false)
-                        .withIncludeBlockquote(false)
-                        .withAdditionalMetadata("filename", filename)
+                        .withHorizontalRuleCreateDocument(true)   // 遇到水平线（---）时，将其作为分块边界
+                        .withIncludeCodeBlock(false)              // 忽略代码块（```...```）中的内容
+                        .withIncludeBlockquote(false)             // 忽略引用块（> ...）中的内容
+                        .withAdditionalMetadata("filename", filename)  // 给所有生成的文档块添加文件名元数据
                         .build();
                 MarkdownDocumentReader markdownDocumentReader = new MarkdownDocumentReader(resource, config);
                 List<Document> docs = markdownDocumentReader.get();
