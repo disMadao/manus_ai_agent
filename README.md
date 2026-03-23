@@ -1,15 +1,17 @@
-# AI 超级智能体项目
+<!-- 项目名称与介绍：与当前主入口 OpenFriend、AgentGateway 行为一致（2026-03） -->
+# OpenFriend / Manus AI Agent
 
 ## 项目介绍
 
-基于 **Spring Boot 3 + Java 21 + Spring AI** 构建的 AI 智能体应用，包含 AI 恋爱大师应用和基于 ReAct 模式的自主规划智能体 ManusAgent。
+基于 **Spring Boot 3 + Java 21 + Spring AI** 构建的通用智能体后端：**OpenFriend** 为默认对话智能体（`ChatClient` + Advisor + 工具）；**AgentGateway** 按 `mode` 分流 **normal / thinking / super**，其中 **super** 走 **ManusAgent**（ReAct 式工具循环）。配套 **workspace** 落盘记忆、RAG（PGVector）、多渠道网关扩展与 ActivityWatch 行为摘要等能力。
 
 ### 核心功能
 
-- **AI 恋爱大师应用**：基于 AI 大模型的情感咨询应用，支持多轮对话、对话记忆持久化、RAG 知识库检索、工具调用、MCP 服务调用
-- **AI 超级智能体（ManusAgent）**：基于 ReAct 模式的自主规划智能体，可利用网页搜索、资源下载和 PDF 生成等工具，自主推理和行动完成复杂任务
-- **AI 工具集**：联网搜索、文件操作、网页抓取、资源下载、终端操作、PDF 生成
-- **MCP 图片搜索服务**：基于 MCP 协议的图片搜索微服务
+- **OpenFriend**：多轮对话、流式输出（含深度思考开关）、可视化记忆（Advisor + `workspace/memory`）、RAG、工具调用、Skills 提示增强、可选 MCP 工具接入
+- **统一网关（AgentGateway）**：同一套 HTTP/SSE 入口按模式路由至 OpenFriend 或 ManusAgent，超级模式结束后持久化会话
+- **ManusAgent**：基于 ReAct 思路的分层智能体（`BaseAgent` → `ToolCallAgent` → `ManusAgent`），支持多步工具调用与终止控制
+- **工具与扩展**：联网搜索、文件操作、网页抓取、资源下载、终端操作、PDF 生成、工作区记忆工具、SkillHub 安装技能等
+- **MCP**：独立 **image-search-mcp-server**；主工程可通过 `mcp-servers.json` 以 stdio 方式接入高德地图等 MCP（可选）
 
 ## 技术栈
 
@@ -25,20 +27,34 @@
 
 ## 项目结构
 
+<!-- 目录树与仓库一致；运行时工作目录下的 workspace/ 不入 jar，勿与 src 混淆 -->
 ```
-├── src/                          # 后端主项目
-│   ├── main/java/com/manus/aiagent/
-│   │   ├── advisor/              # 自定义 Advisor
-│   │   ├── agent/                # AI 智能体（ManusAgent）
-│   │   ├── app/                  # AI 应用（恋爱大师）
-│   │   ├── chatmemory/           # 对话记忆持久化
-│   │   ├── config/               # 配置类
-│   │   ├── controller/           # 接口控制器
-│   │   ├── rag/                  # RAG 知识库
-│   │   └── tools/                # AI 工具集
-│   └── main/resources/           # 配置文件和知识库文档
-├── ai-agent-frontend/            # 前端项目（Vue 3）
-└── image-search-mcp-server/      # MCP 图片搜索服务
+manus_ai_agent/
+├── src/main/java/com/manus/aiagent/
+│   ├── advisor/                  # 自定义 Advisor（如 VisualizedMemoryAdvisor）及 advisor/config
+│   ├── agent/
+│   │   ├── app/                  # OpenFriend（主 ChatClient 智能体）
+│   │   ├── manus/                # ManusAgent、ReAct/ToolCall 分层与状态机
+│   │   └── LiteAgent.java        # 轻量单次调用（如记忆工具内联改写）
+│   ├── gateway/                  # AgentGateway、ManusMemoryEnricher、GatewayController
+│   │   ├── channel/              # 飞书 / QQ 等渠道抽象（与统一请求模型配合）
+│   │   ├── model/                # GatewayRequest / GatewayResponse
+│   │   ├── activitywatch/        # ActivityWatch REST → workspace/memory/activity 摘要
+│   │   └── heartbeat/            # 定时触发 ActivityWatch 同步等
+│   ├── chatmemory/               # 可视化记忆管理、消息存储、MemoryConfig
+│   ├── controller/               # REST（如 AiController、HealthController）
+│   ├── rag/                      # 向量库、文档加载、查询重写、LoveApp* 遗留命名配置
+│   ├── skill/                    # FileSystemSkillRegistry、SkillPromptAugmentAdvisor
+│   ├── tools/                    # ToolRegistration、各类 @Tool
+│   ├── config/                   # 如 CorsConfig
+│   ├── constant/
+│   └── demo/                     # 试验与示例代码
+├── src/main/resources/           # application*.yml、document/ 等
+├── workspace/                    # 运行时：memory（SOUL/memory/diary/activity）、skills 等
+├── tmp/                          # 临时文件目录（如工具写盘约定）
+├── ai-agent-frontend/            # 前端（Vue 3）
+├── image-search-mcp-server/      # MCP 图片搜索独立服务
+└── docs/                         # 设计说明与集成文档
 ```
 
 ## 快速开始
