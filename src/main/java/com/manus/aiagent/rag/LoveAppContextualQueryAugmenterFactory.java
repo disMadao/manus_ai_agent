@@ -6,6 +6,7 @@ import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugment
 /**
  * 创建上下文查询增强器的工厂
  */
+@Deprecated
 public class LoveAppContextualQueryAugmenterFactory {
 
     public static ContextualQueryAugmenter createInstance() {

@@ -15,6 +15,7 @@ import java.util.List;
 /**
  * 恋爱大师应用文档加载器
  */
+@Deprecated
 @Component
 @Slf4j
 public class LoveAppDocumentLoader {

@@ -11,6 +11,8 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 /**
  * 创建自定义的 RAG 检索增强顾问的工厂
  */
+@Deprecated
+
 public class LoveAppRagCustomAdvisorFactory {
 
     /**
