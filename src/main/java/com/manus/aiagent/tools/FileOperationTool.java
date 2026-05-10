@@ -22,7 +22,7 @@ public class FileOperationTool {
         }
     }
 
-    @Tool(description = "Write to tmp/file/ only (NOT workspace/memory/diary). For diary rewrite use memoryWorkspace with command write_diary_date. For skills use installSkill.")
+    @Tool(description = "Write to tmp/file/ only (NOT workspace/memory/diary). For diary rewrite use memoryWorkspace with command write_diary_date.")
     public String writeFile(@ToolParam(description = "Name of the file to write") String fileName,
                             @ToolParam(description = "Content to write to the file") String content
     ) {

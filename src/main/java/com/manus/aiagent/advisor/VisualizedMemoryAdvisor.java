@@ -53,7 +53,7 @@ public class VisualizedMemoryAdvisor implements CallAdvisor, StreamAdvisor, Orde
      */
     private volatile String loadedSystemContent;
 
-    private static final int MEMORY_COLLAPSE_THRESHOLD = 6;
+    private static final int MEMORY_COLLAPSE_THRESHOLD = 20;
 
     public VisualizedMemoryAdvisor(VisualizedMemoryManager memoryManager,
                                    ChatMemory shortTermMemory,
@@ -195,7 +195,7 @@ public class VisualizedMemoryAdvisor implements CallAdvisor, StreamAdvisor, Orde
                 .build();
     }
 
-    private void persistRound(String conversationId, List<Message> userMessages, String assistantText) {
+    public void persistRound(String conversationId, List<Message> userMessages, String assistantText) {
         if (assistantText == null || assistantText.isBlank()) {
             assistantText = "（空回复）";
         }

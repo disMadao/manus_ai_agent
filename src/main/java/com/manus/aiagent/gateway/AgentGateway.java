@@ -1,11 +1,13 @@
 package com.manus.aiagent.gateway;
 
+import com.manus.aiagent.agent.app.DiagnosisAgent;
 import com.manus.aiagent.agent.manus.ManusAgent;
 import com.manus.aiagent.agent.app.OpenFriend;
-import com.manus.aiagent.advisor.VisualizedMemoryAdvisor;
 import com.manus.aiagent.chatmemory.ChatMessageStore;
 import com.manus.aiagent.gateway.model.GatewayRequest;
 import com.manus.aiagent.gateway.model.GatewayResponse;
+import com.manus.aiagent.tools.terminal.TerminalCommandGate;
+import com.manus.aiagent.tools.terminal.TerminalToolChatContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -14,9 +16,11 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 统一网关服务：负责路由消息到对应的 Agent，注入记忆上下文，持久化对话。
@@ -28,26 +32,29 @@ public class AgentGateway {
 
     private final OpenFriend openFriend;
     private final ToolCallback[] allTools;
+    private final ToolCallback[] diagnosisTools;
     private final ChatModel dashScopeChatModel;
     private final ChatMessageStore chatMessageStore;
     private final ChatMemory shortTermMemory;
     private final ManusMemoryEnricher manusMemoryEnricher;
-    private final VisualizedMemoryAdvisor visualizedMemoryAdvisor;
+    private final TerminalCommandGate terminalCommandGate;
 
     public AgentGateway(OpenFriend openFriend,
                         ToolCallback[] allTools,
+                        ToolCallback[] diagnosisTools,
                         @Qualifier("dashScopeChatModel") ChatModel dashScopeChatModel,
                         ChatMessageStore chatMessageStore,
                         ChatMemory shortTermMemory,
                         ManusMemoryEnricher manusMemoryEnricher,
-                        VisualizedMemoryAdvisor visualizedMemoryAdvisor) {
+                        TerminalCommandGate terminalCommandGate) {
         this.openFriend = openFriend;
         this.allTools = allTools;
+        this.diagnosisTools = diagnosisTools;
         this.dashScopeChatModel = dashScopeChatModel;
         this.chatMessageStore = chatMessageStore;
         this.shortTermMemory = shortTermMemory;
         this.manusMemoryEnricher = manusMemoryEnricher;
-        this.visualizedMemoryAdvisor = visualizedMemoryAdvisor;
+        this.terminalCommandGate = terminalCommandGate;
     }
 
     /**
@@ -57,6 +64,7 @@ public class AgentGateway {
         String mode = request.getMode() != null ? request.getMode() : "normal";
         return switch (mode.toLowerCase()) {
             case "super" -> chatWithManusAgent(request);
+            case "diagnosis" -> chatWithDiagnosisAgent(request);
             case "thinking" -> openFriend.doChatByStream(request.getMessage(), request.getChatId(), true);
             default -> openFriend.doChatByStream(request.getMessage(), request.getChatId(), false);
         };
@@ -72,6 +80,10 @@ public class AgentGateway {
                 String result = chatWithManusAgentSync(request);
                 return GatewayResponse.ok(result, request.getChatId());
             }
+            if ("diagnosis".equalsIgnoreCase(mode)) {
+                String result = chatWithDiagnosisAgentSync(request);
+                return GatewayResponse.ok(result, request.getChatId());
+            }
             String result = openFriend.doChat(request.getMessage(), request.getChatId());
             return GatewayResponse.ok(result, request.getChatId());
         } catch (Exception e) {
@@ -84,34 +96,73 @@ public class AgentGateway {
      * 超级智能体模式（流式）：注入记忆 → 运行 ManusAgent → 仅返回最终结果 → 持久化
      */
     private Flux<String> chatWithManusAgent(GatewayRequest request) {
-        ManusAgent agent = createMemoryEnrichedManusAgent(request.getMessage());
+        String chatId = request.getChatId();
+        String message = request.getMessage();
+        Optional<String> early = terminalCommandGate.tryConsumeConfirmationReply(chatId, message);
+        if (early.isPresent()) {
+            String r = early.get();
+            return Flux.just(r).doOnComplete(() -> persistManusConversation(chatId, message, r));
+        }
+        ManusAgent agent = createMemoryEnrichedManusAgent(message);
         StringBuilder resultBuilder = new StringBuilder();
-
-        return agent.runFluxFinalOnly(request.getMessage())
-                .doOnNext(resultBuilder::append)
-                .doOnComplete(() -> persistManusConversation(
-                        request.getChatId(), request.getMessage(), resultBuilder.toString()
-                ))
-                .doOnError(e -> log.error("ManusAgent 执行失败", e));
+        return Flux.defer(() -> {
+            TerminalToolChatContext.setChatId(chatId);
+            return agent.runFluxFinalOnly(message)
+                    .doOnNext(resultBuilder::append)
+                    .doOnComplete(() -> persistManusConversation(chatId, message, resultBuilder.toString()))
+                    .doOnError(e -> log.error("ManusAgent 执行失败", e))
+                    .doFinally(s -> TerminalToolChatContext.clear());
+        });
     }
 
     /**
      * 超级智能体模式（同步）：注入记忆 → 运行 ManusAgent → 持久化
      */
     private String chatWithManusAgentSync(GatewayRequest request) {
-        ManusAgent agent = createMemoryEnrichedManusAgent(request.getMessage());
-        String result = agent.run(request.getMessage());
-        persistManusConversation(request.getChatId(), request.getMessage(), result);
-        return result;
+        String chatId = request.getChatId();
+        String message = request.getMessage();
+        Optional<String> early = terminalCommandGate.tryConsumeConfirmationReply(chatId, message);
+        if (early.isPresent()) {
+            String r = early.get();
+            persistManusConversation(chatId, message, r);
+            return r;
+        }
+        TerminalToolChatContext.setChatId(chatId);
+        try {
+            ManusAgent agent = createMemoryEnrichedManusAgent(message);
+            String result = agent.run(message);
+            persistManusConversation(chatId, message, result);
+            return result;
+        } finally {
+            TerminalToolChatContext.clear();
+        }
     }
 
     /**
      * 创建注入了记忆上下文的 ManusAgent 实例
      */
     private ManusAgent createMemoryEnrichedManusAgent(String userMessage) {
-        ManusAgent agent = new ManusAgent(allTools, dashScopeChatModel, visualizedMemoryAdvisor);
+        ManusAgent agent = new ManusAgent(allTools, dashScopeChatModel);
         agent.setSystemPrompt(manusMemoryEnricher.buildEnrichedSystemPrompt(agent.getSystemPrompt(), userMessage));
         return agent;
+    }
+
+    // ==================== DiagnosisAgent 故障诊断模式 ====================
+
+    /**
+     * 故障诊断模式（流式）：创建 DiagnosisAgent → 运行 → 仅返回最终结果
+     */
+    private Flux<String> chatWithDiagnosisAgent(GatewayRequest request) {
+        DiagnosisAgent agent = new DiagnosisAgent(diagnosisTools, dashScopeChatModel);
+        return agent.runFluxFinalOnly(request.getMessage());
+    }
+
+    /**
+     * 故障诊断模式（同步）
+     */
+    private String chatWithDiagnosisAgentSync(GatewayRequest request) {
+        DiagnosisAgent agent = new DiagnosisAgent(diagnosisTools, dashScopeChatModel);
+        return agent.run(request.getMessage());
     }
 
     /**

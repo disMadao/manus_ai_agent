@@ -154,6 +154,21 @@ public class VisualizedMemoryManager {
     }
 
     /**
+     * 导出所有上下文（SOUL + memory + 今日日记）
+     * 供 Loop 等场景使用
+     */
+    public String exportAllContext() {
+        String memory = readFullMemory();
+        String todayDiary = readTodayDiaryWithHeader();
+
+        StringBuilder sb = new StringBuilder(memory);
+        if (todayDiary != null && !todayDiary.isEmpty()) {
+            sb.append("\n\n---\n[今天的日记（仅供参考，不要主动复述）]：\n").append(todayDiary);
+        }
+        return sb.toString();
+    }
+
+    /**
      * 覆写整个 memory.md (由 AI 负责保证结构不被破坏)
      * 自动识别 --- 分割线，只保存 memory 部分
      */

@@ -17,6 +17,7 @@ import java.util.Map;
  * QQ Bot 回调：POST /gateway/qq/callback
  * 飞书 Bot 回调：POST /gateway/feishu/callback
  */
+@Deprecated
 @RestController
 @RequestMapping("/gateway")
 @RequiredArgsConstructor

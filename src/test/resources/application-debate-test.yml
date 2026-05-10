@@ -1,0 +1,7 @@
+# 辩论集成测试：用内存 H2 占位 DataSource，避免必须启动本机 PostgreSQL
+spring:
+  datasource:
+    url: jdbc:h2:mem:debate_it;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:

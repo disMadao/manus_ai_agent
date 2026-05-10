@@ -62,10 +62,6 @@ knife4j:
 search-api:
   # 需要替换为你自己的 key
   api-key: your-search-api-key
-# SkillHub 技能市场配置
-skillhub:
-  base-url: https://skillhub.tencent.com
-  skills-dir: workspace/skills
 # Gateway 外部渠道配置（QQ Bot / 飞书 Bot）
 gateway:
 #  qq:
@@ -86,7 +82,20 @@ activitywatch:
   events-limit: 8000
   heartbeat-interval-ms: 1200000 # 20 分钟
 
+# Skill 系统配置
+skill:
+  # 额外的 skill 扫描目录（逗号分隔，默认会扫描 ~/.manus/skills 和 workspace/skills）
+  dirs:
+  sandbox:
+    # 是否启用 conda 沙箱执行 Python 脚本
+    enabled: true
+    # conda 环境名称
+    conda-env: skill-sandbox
+    # 脚本执行超时时间（秒）
+    timeout: 120
+
 # 修改日志级别，查看 Spring AI 更多调用细节
 logging:
   level:
     org.springframework.ai: DEBUG
+    com.manus.aiagent.skill: DEBUG
