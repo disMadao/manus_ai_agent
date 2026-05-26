@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: image-search-mcp-server
+  profiles:
+    active: sse
+  main:
+    banner-mode: off          # 关闭 Spring Boot 启动 Banner（也会输出到控制台）
+server:
+  port: 8127
+
+logging:
+  console:
+    target: SYSTEM_ERR        # 将控制台日志输出重定向到 stderr
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"   # 可选，自定义日志格式
+  # 如果想同时保存日志到文件（便于调试），可取消下面的注释
+  # file:
+  #   name: ./logs/mcp-server.log

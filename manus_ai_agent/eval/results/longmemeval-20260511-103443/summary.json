@@ -1,0 +1,16 @@
+{
+  "run_at": "2026-05-11T02:43:01.991746+00:00",
+  "dataset": "data\\longmemeval_oracle.json",
+  "judge_model": "qwen-plus",
+  "base_url": "http://localhost:8123/api",
+  "injection_method": "memory_md_bench_data",
+  "total_samples": 50,
+  "correct": 40,
+  "wrong": 10,
+  "abstain": 0,
+  "request_failures": 0,
+  "accuracy": 0.8,
+  "abstention_accuracy": 1.0,
+  "non_abstain_count": 50,
+  "abstain_count": 0
+}

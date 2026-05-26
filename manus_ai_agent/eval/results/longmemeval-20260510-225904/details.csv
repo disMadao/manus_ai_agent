@@ -1,0 +1,153 @@
+question_id,question_type,question,reference_answer,hypothesis,is_abstain,elapsed_seconds,input_chars,label,judge_reason
+gpt4_2655b836,temporal-reasoning,What was the first issue I had with my new car after its first service?,GPS system not functioning correctly,"The first issue you had with your new car after its first service was a malfunction of the GPS system, which occurred on **March 22** — shortly after the service on **March 15**. The dealership replaced the entire GPS system, and it has since been working flawlessly.",False,2.0,42475,SKIPPED,
+gpt4_2487a7cb,temporal-reasoning,"Which event did I attend first, the 'Effective Time Management' workshop or the 'Data Analysis using Python' webinar?",'Data Analysis using Python' webinar,"Based on the bench_data conversations:
+
+- You attended the **""Effective Time Management"" workshop** *last Saturday* (relative to the May 28, 2023 session — i.e., May 27, 2023).  
+- You participated in the **""Data Analysis using Python"" webinar** *two months ago* (relative to the May 28, 2023 session — i.e., around March 2023).
+
+So, the **""Data Analysis using Python"" webinar** occurred **first**, approximately two months before the ""Effective Time Management"" workshop.
+
+✅ Answer: The **'Data Analysis using Python' webinar** came first.",False,3.9,34552,SKIPPED,
+gpt4_76048e76,temporal-reasoning,"Which vehicle did I take care of first in February, the bike or the car?",bike,"Based on the bench_data conversations:
+
+- You had your **bike repaired in mid-February** (“in mid-February, I had to take it in for repairs because the gears were acting up…”).  
+- You **washed your car (Toyota Corolla) on Monday, February 27th**, after not doing so for over a month.
+
+So:  
+✅ Bike repair occurred *in mid-February* → roughly Feb 10–15.  
+✅ Car wash occurred *on Feb 27*.
+
+Therefore, you took care of the **bike first** in February.
+
+Answer: **The bike.**",False,3.6,25829,SKIPPED,
+gpt4_2312f94c,temporal-reasoning,"Which device did I got first, the Samsung Galaxy S22 or the Dell XPS 13?",Samsung Galaxy S22,"Based on the bench_data conversations:
+
+- You got the **Samsung Galaxy S22** from Best Buy at the mall on **February 20th**.  
+- You pre-ordered the **Dell XPS 13** on **January 28th**, but it **arrived on February 25th**, after a delay.
+
+So although the Dell XPS 13 was *ordered first*, the **Samsung Galaxy S22 was received first** (Feb 20 vs Feb 25).
+
+✅ Therefore, the device you **got first** (i.e., physically obtained) is the **Samsung Galaxy S22**.",False,3.9,26565,SKIPPED,
+0bb5a684,temporal-reasoning,How many days before the team meeting I was preparing for did I attend the workshop on 'Effective Communication in the Workplace'?,7 days. 8 days (including the last day) is also acceptable.,"From the bench_data, the workshop on ""Effective Communication in the Workplace"" was attended on **January 10th**, and the team meeting being prepared for is scheduled for **January 17th**.
+
+So:  
+January 17th − January 10th = **7 days**.
+
+✅ Therefore, you attended the workshop **7 days before** the team meeting.
+
+doTerminate",False,2.7,35805,SKIPPED,
+08f4fc43,temporal-reasoning,How many days had passed between the Sunday mass at St. Mary's Church and the Ash Wednesday service at the cathedral?,30 days. 31 days (including the last day) is also acceptable.,"From the bench_data:
+
+- The Sunday mass at St. Mary’s Church was on **January 2nd** (stated in session `answer_6ea1541e_1`).
+- The Ash Wednesday service at the cathedral was on **February 1st** (stated in session `answer_6ea1541e_2`).
+
+Assuming both dates are in the same year, and noting that January has 31 days:
+
+- From **January 2** to **January 31** = 30 days  
+- Then **February 1** is the *next day* → so total days **between** January 2 and February 1 (not including Jan 2, but *up to and including* Feb 1?) — but the question asks:  
+> *How many days had passed between the Sunday mass [...] and the Ash Wednesday service [...]?*
+
+“Between” typically excludes both endpoints. However, in common usage for elapsed time (“how many days had passed”), it usually means the number of full days *after* the first event and *before* the second — i.e., days elapsed from Jan 2 to Feb 1.
+
+Let’s compute:
+
+- Jan 2 → Jan 3: 1 day passed  
+- Jan 2 → Feb 1: exactly **30 days later**, because:
+  - Jan 2 to Feb 2 would be 31 days,
+  - So Jan 2 to Feb 1 is **30 days**.
+
+✅ Confirmed:  
+Jan 2 (inclusive) to Feb 1 (inclusive) = 31 days total duration,  
+but **days *passed between*** them = **30 days**.
+
+Answer: **30 days**.",False,9.1,33269,SKIPPED,
+2c63a862,temporal-reasoning,How many days did it take for me to find a house I loved after starting to work with Rachel?,14 days. 15 days (including the last day) is also acceptable.,"You started working with Rachel on **February 15**, and you saw a house you loved on **March 1**.
+
+Counting the days:
+- February has 28 days in 2022 (not a leap year).
+- From Feb 15 to Feb 28 = 14 days (inclusive of Feb 15? Let's check carefully).
+
+But temporal reasoning for “how many days *did it take*” means:  
+**How many days elapsed *between* Feb 15 and Mar 1?**  
+That is:  
+- Feb 15 → Feb 16 = 1 day  
+- …  
+- Feb 15 → Mar 1 = **14 days later** (since Mar 1 is the 15th day *after* Feb 15 inclusive, but *elapsed time* is 14 days).
+
+Standard interpretation:  
+- Feb 15 is day 0 (start of collaboration)  
+- Feb 16 is day 1  
+- …  
+- Mar 1 is day **14**  
+
+✅ Confirmed:  
+- Feb 15 to Mar 1 inclusive = 15 calendar days  
+- But *days taken* = number of days *after* starting → **14 days**
+
+Answer: **14 days**.",False,7.2,27019,SKIPPED,
+gpt4_385a5000,temporal-reasoning,"Which seeds were started first, the tomatoes or the marigolds?",Tomatoes,"The tomatoes were started first.
+
+From the bench_data:
+
+- In Session answer_7a4a93f1_1 (2023/03/10, 00:33), the user says:  
+  > *""I've been starting seeds indoors under grow lights in my basement since February 20th — tomatoes, peppers, and cucumbers are all doing well, about 2–3 inches tall now.""*
+
+- In Session answer_7a4a93f1_2 (2023/03/10, 08:29), the user says:  
+  > *""By the way, I just started some marigold seeds that arrived on March 3rd, and they're already germinating...""*
+
+So:  
+- Tomatoes (and peppers, cucumbers) → started **February 20**  
+- Marigolds → started **March 3**
+
+✅ Therefore, **tomatoes were started first**, by 11 days.",False,5.5,20797,SKIPPED,
+2a1811e2,temporal-reasoning,How many days had passed between the Hindu festival of Holi and the Sunday mass at St. Mary's Church?,21 days. 22 days (including the last day) is also acceptable.,"From the bench_data:
+
+- The user attended the **Holi celebration at their local temple on February 26th** (stated in Session answer_1cc3cd0c_1, first message).  
+- The user attended **Sunday mass at St. Mary's Church on March 19th** (stated in Session answer_1cc3cd0c_2, first message).
+
+Now compute the number of days between **February 26** and **March 19**, *not including* February 26 but *including* March 19?  
+But the question asks: *How many days had passed between* the two events — standard interpretation is **elapsed days**, i.e., the duration from Feb 26 to Mar 19 → that’s the number of days *after* Feb 26 *up to and including* Mar 19? No — “between” usually excludes both endpoints unless specified.
+
+However, temporal-reasoning questions like this in benchmarks typically ask for the **number of calendar days separating the two dates**, i.e., **days elapsed from one date to the next**, computed as:  
+**March 19 − February 26** (in 2023, a non-leap year).
+
+- February has 28 days in 2023.
+- Days remaining in February after Feb 26: Feb 27 and Feb 28 → **2 days**.
+- Then March 1 to March 19 → **19 days**.
+
+So total days *between* Feb 26 and Mar 19 = days *after* Feb 26 *up to but not including* Mar 19? Let's clarify standard usage.
+
+✅ Standard definition of “days between A and B” (for two dates) is the number of days *in between*, i.e., **exclusive**:  
+- Between Feb 26 and Feb 27 → 0 days.  
+- Between Feb 26 and Mar 1 → Feb 27, 28 → 2 days.
+
+So between **Feb 26** and **Mar 19**:  
+→ Feb 27, 28 (2)  
+→ Mar 1–18 (18 days)  
+= **20 days**.
+
+Let’s verify:  
+- From Feb 26 to Mar 19 is **21 days later** (i.e., Mar 19 is the 21st day *after* Feb 26, counting Feb 26 as day 0).  
+- So number of days *between* = 21 − 1 = **20**.
+
+Yes:  
+- Feb 26 → day 0  
+- Feb 27 → day 1  
+- …  
+- Mar 19 → day 21  
+So days *between* = days strictly after Feb 26 and strictly before Mar 19 = days numbered 1 through 20 → **20 days**.
+
+✅ Confirmed.
+
+**Answer: 20 days.**",False,15.2,27028,SKIPPED,
+bbf86515,temporal-reasoning,How many days before the 'Rack Fest' did I participate in the 'Turbocharged Tuesdays' event?,4 days.,"From the bench_data:
+
+- “Turbocharged Tuesdays” event occurred on **June 14th** (stated twice: in session answer_b3763b6b_1 and again in answer_b3763b6b_2).
+- “Rack Fest” occurred on **June 18th** (stated in session answer_b3763b6b_2).
+
+So:  
+June 18th − June 14th = **4 days**.
+
+Therefore, you participated in the “Turbocharged Tuesdays” event **4 days before** the “Rack Fest”.
+
+✅ Answer: **4 days**.",False,4.0,28988,SKIPPED,

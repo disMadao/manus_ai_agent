@@ -1,0 +1,22 @@
+question_id,question_type,question,reference_answer,hypothesis,is_abstain,elapsed_seconds,input_chars,label,judge_reason
+gpt4_2655b836,temporal-reasoning,What was the first issue I had with my new car after its first service?,GPS system not functioning correctly,"The first issue you had with your new car after its first service was a malfunction of the GPS system, which occurred on **March 22** — shortly after the service on **March 15**. The dealership replaced the entire GPS system, and it was restored to full functionality.",False,2.7,42475,SKIPPED,
+gpt4_2487a7cb,temporal-reasoning,"Which event did I attend first, the 'Effective Time Management' workshop or the 'Data Analysis using Python' webinar?",'Data Analysis using Python' webinar,任务已结束。,False,7.4,34552,SKIPPED,
+gpt4_76048e76,temporal-reasoning,"Which vehicle did I take care of first in February, the bike or the car?",bike,"Let’s reconstruct the timeline from the bench_data sessions:
+
+- In **answer_b535969f_2**, you said:  
+  > *“in mid-February, I had to take it [the bike] in for repairs because the gears were acting up…”*  
+  → Bike repair occurred **mid-February**.
+
+- In **answer_b535969f_1**, you said:  
+  > *“I just washed my current Corolla on Monday, February 27th…”*  
+  → Car wash occurred **February 27th**, which is **late February**, *after* mid-February.
+
+So:
+- Bike repair: **mid-February** (e.g., ~Feb 10–15)
+- Car wash: **Monday, February 27th**
+
+✅ Therefore, you took care of the **bike first** in February.
+
+The bike repair preceded the car wash — both are acts of care (repair = maintenance; wash = upkeep), and the bike was addressed earlier in the month.
+
+Let me know if you'd like a simple timeline summary or help documenting this in your diary.",False,6.2,25829,SKIPPED,

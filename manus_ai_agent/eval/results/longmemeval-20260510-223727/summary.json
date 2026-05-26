@@ -1,0 +1,17 @@
+{
+  "run_at": "2026-05-10T14:37:27.432198+00:00",
+  "dataset": "data\\longmemeval_oracle.json",
+  "mode": "full",
+  "judge_model": "gpt-4o",
+  "base_url": "http://localhost:8123/api",
+  "total_samples": 5,
+  "total_judged": 0,
+  "correct": 0,
+  "wrong": 0,
+  "abstain": 0,
+  "request_failures": 5,
+  "accuracy": 0.0,
+  "abstention_accuracy": 1.0,
+  "non_abstain_count": 0,
+  "abstain_count": 0
+}

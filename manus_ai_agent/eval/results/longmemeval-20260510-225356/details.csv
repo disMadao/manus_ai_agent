@@ -1,0 +1,6 @@
+question_id,question_type,question,reference_answer,hypothesis,is_abstain,elapsed_seconds,input_chars,label,judge_reason
+gpt4_2655b836,temporal-reasoning,What was the first issue I had with my new car after its first service?,GPS system not functioning correctly,"The first issue you had with your new car after its first service was a malfunction of the GPS system, which occurred on **March 22** — shortly after the service on **March 15**. The dealership replaced the entire GPS system, and it was restored to full functionality.",False,2.6,42475,SKIPPED,
+gpt4_2487a7cb,temporal-reasoning,"Which event did I attend first, the 'Effective Time Management' workshop or the 'Data Analysis using Python' webinar?",'Data Analysis using Python' webinar,任务已结束。,False,8.6,34552,SKIPPED,
+gpt4_76048e76,temporal-reasoning,"Which vehicle did I take care of first in February, the bike or the car?",bike,任务已结束。,False,6.2,25829,SKIPPED,
+gpt4_2312f94c,temporal-reasoning,"Which device did I got first, the Samsung Galaxy S22 or the Dell XPS 13?",Samsung Galaxy S22,任务已结束。祝你一切顺利！ 🌟,False,6.6,26565,SKIPPED,
+0bb5a684,temporal-reasoning,How many days before the team meeting I was preparing for did I attend the workshop on 'Effective Communication in the Workplace'?,7 days. 8 days (including the last day) is also acceptable.,7天。,False,8.7,35805,SKIPPED,

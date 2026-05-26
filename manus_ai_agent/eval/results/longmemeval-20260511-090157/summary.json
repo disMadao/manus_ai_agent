@@ -1,0 +1,16 @@
+{
+  "run_at": "2026-05-11T01:07:01.326329+00:00",
+  "dataset": "data\\longmemeval_oracle.json",
+  "judge_model": "skipped",
+  "base_url": "http://localhost:8123/api",
+  "injection_method": "memory_md_bench_data",
+  "total_samples": 30,
+  "correct": 0,
+  "wrong": 0,
+  "abstain": 0,
+  "request_failures": 0,
+  "accuracy": 0.0,
+  "abstention_accuracy": 1.0,
+  "non_abstain_count": 0,
+  "abstain_count": 0
+}
